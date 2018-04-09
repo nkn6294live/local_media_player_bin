@@ -1,0 +1,309 @@
+<html>
+<head>
+    <meta name="viewport" content="width=device-width">
+    <meta charset="UTF-8">
+    <script>
+        var CollectionItem = function (folder, list, viewText) {
+            this.Folder = folder;
+            this.ListSong = list;
+            this.SumSong = this.ListSong.length;
+            this.Text = viewText;
+        }
+    </script>
+    <script src="./source.js"></script>
+    <style>
+        li {
+            cursor: pointer;
+            cursor: hand;
+        }
+        /*list-style-type : none;*/
+        marquee {
+        }
+
+        audio {
+            align: center;
+        }
+
+        #playing_area {
+        }
+
+        #display_list {
+        }
+
+        #media_player {
+        }
+
+        video {
+        }
+    </style>
+</head>
+<body style="margin: 0px;">
+    <div id="playing_area">
+        <b>Selection playlist: </b><select id="collection"></select> Have all <b id="sumSong"></b> songs in selected playlist.
+        <button id="random_selection_playlist">Random Playlist</button>
+        <h1><marquee id="current_song_playing" behavior="alternate"></marquee></h1>
+        <video controls="" autoplay="" name="media" id="media_player" align="middle">
+            <source src="" type="audio/mp3" id="source_media">
+        </video>
+        </br>
+        </br>
+        <input id="loopOption" type="checkbox" />Loop
+        <input id="randomOption" type="checkbox" checked="true" />Random
+        <input id="ignoreErrorOption" type="checkbox" />Ignore Error
+        <input id="repeate_playlist" type="checkbox" checked="true" />Repeat Playlist
+        <button id="previousSong">Previous</button>
+        <button id="nextSong">Next</button>
+        <button id="slowerSpeed">Slower</button>
+        <button id="fasterSpeed">Faster</button>
+        <button id="normalSpeed">Normal Speed</button>
+        <h3 id="playBackRate"></h3>
+        <div id="display_list">
+            <p id="list_music_header"></p>
+            <ol id="list_song" start="0"></ol>
+        </div>
+    </div>
+    <script>
+        var playing_area = document.getElementById("playing_area");
+        var listPlaylist = Object.keys(listCollection);
+        var currentCollectionItem;
+        var listSong;
+        var sumSong;
+
+        var folder = "";
+        var collectionSelection = document.getElementById("collection");
+        var media_player = document.getElementById("media_player");
+        var source_media = document.getElementById("source_media");
+        var list_music_header = document.getElementById("list_music_header");
+
+        var loopOption = document.getElementById("loopOption");
+        var randomOption = document.getElementById("randomOption");
+        var ignoreErrorOption = document.getElementById("ignoreErrorOption");
+        var repeatPlaylistOption = document.getElementById("repeate_playlist");
+        var previousSong = document.getElementById("previousSong");
+        var nextSong = document.getElementById("nextSong");
+        var slowerSpeed = document.getElementById("slowerSpeed");
+        var fasterSpeed = document.getElementById("fasterSpeed");
+        var normalSpeed = document.getElementById("normalSpeed");
+        var randomPlaylist = document.getElementById("random_selection_playlist");
+
+        var current_song_playing = document.getElementById("current_song_playing");
+        var playBackRate = document.getElementById("playBackRate");
+        var listSongView = document.getElementById("list_song");
+
+        var playBackRateValue = 1.0;
+        var minPlayBackRate = 0.2;
+        var maxPlayBackRate = 4.0;
+        //Monitor variable sync view(check option, change variable through console).
+        var isLoop = false;
+        var isRandom = true;
+        var isIgnoreError = true;
+        var isRepeatPlaylist = true;
+        //var sumItem = sumEnglishSong;
+        var currentIndex = -1;
+        var playListIndex = -1;
+
+        function incrementSpeed() {
+            updatePlayBackRate(playBackRateValue + 0.1);
+        }
+        function decrementSpeed() {
+            updatePlayBackRate(playBackRateValue - 0.1);
+        }
+        function setNormalSpeed() {
+            updatePlayBackRate(1.0);
+        }
+
+        function playNext() {
+            refreshView();
+            if (isRepeatPlaylist == false && currentIndex >= (sumSong - 1)) {
+                updatePlaylistRandom();
+            }
+            ///*
+            updateCurrent(currentIndex, "black");
+            var nextSong = getNextSong();
+            current_song_playing.innerHTML = nextSong + "[" + currentIndex + "]";
+            updateCurrent(currentIndex, "red");
+            if (nextSong.toUpperCase().endsWith("MP4") || nextSong.toUpperCase().endsWith("WEBM")) {
+
+            } else {
+
+            }
+            source_media.src = folder + "/" + nextSong;
+            document.title = nextSong;
+            //document.getElementById("" + currentIndex).scrollIntoView();
+            media_player.load();
+            media_player.playbackRate = playBackRateValue;
+            //media_player.play();
+            //*/
+        }
+        function playPrevious() {
+            refreshView();
+            ///*
+            updateCurrent(currentIndex, "black");
+            var nextSong = getPreviousSong();
+            current_song_playing.innerHTML = nextSong + "[" + currentIndex + "]";
+            updateCurrent(currentIndex, "red");
+            source_media.src = folder + "/" + nextSong;
+            document.title = nextSong;
+            //document.getElementById("" + currentIndex).scrollIntoView();
+            media_player.load();
+            media_player.playbackRate = playBackRateValue;
+            //media_player.play();
+            //*/
+        }
+        function playByIndex(id) {
+            refreshView();
+            var value = parseInt(id);
+            if (currentIndex == id) {
+                return;
+            }
+            if (value >= 0 && value < sumSong) {
+                updateCurrent(currentIndex, "black");
+                var nextSong = listSong[value];
+                currentIndex = value;
+                current_song_playing.innerHTML = nextSong + "[" + currentIndex + "]";
+                updateCurrent(currentIndex, "red");
+                source_media.src = folder + "/" + nextSong;
+                document.title = nextSong;
+                //document.getElementById("" + currentIndex).scrollIntoView();
+                media_player.load();
+                media_player.playbackRate = playBackRateValue;
+            }
+            return value;
+        }
+
+        function getNextSong() {
+            if (currentIndex < 0 || currentIndex >= sumSong) {
+                currentIndex = 0;
+            }
+            if (isLoop && currentIndex >= 0 && currentIndex < sumSong) {
+
+            } else if (isRandom) {
+                currentIndex = parseInt(sumSong * Math.random());
+            }
+            else {
+                currentIndex++;
+                if (currentIndex == sumSong) {
+                    currentIndex = 0;
+                }
+            }
+            return listSong[currentIndex];
+        }
+        function getPreviousSong() {
+            if (isLoop) {
+            } else if (isRandom) {
+                currentIndex = parseInt(sumSong * Math.random());
+            } else {
+                currentIndex--;
+                if (currentIndex < 0) {
+                    currentIndex = sumSong - 1;
+                }
+            }
+            return listSong[currentIndex];
+        }
+        function updateCurrent(current, color) {
+            if (current < 0 || current >= sumSong) {
+                return;
+            }
+            var currentElement = document.getElementById("" + current);
+            currentElement.style.color = color;
+        }
+        function updatePlayBackRate(value) {
+            if (value > maxPlayBackRate || value < minPlayBackRate) {
+                playBackRate.style.color = "red";
+
+            } else {
+                playBackRateValue = value;
+                playBackRate.style.color = "black";
+                playBackRate.innerHTML = "Speed:x" + (playBackRateValue.toFixed(1));
+
+                media_player.playbackRate = playBackRateValue;
+                //media_player.load();
+                //media_player.play();
+            }
+            return value;
+        }
+        function updateCollection() {
+            var buffer = [];
+            for (i = 0; i < listPlaylist.length; i++) {
+                var item = listPlaylist[i];
+                buffer.push("<option value='" + item + "'>" + listCollection[item].Text + "</option>");
+            }
+            collectionSelection.innerHTML = buffer.join("");
+        }
+        function updateList(collectionItem) {
+            if (collectionItem == null) {
+                return false;
+            }
+            currentCollectionItem = collectionItem;
+            listSong = currentCollectionItem.ListSong;
+            sumSong = currentCollectionItem.SumSong;
+            folder = currentCollectionItem.Folder;
+            list_music_header.innerHTML = "LIST MUSIC[<b>From: </b><i>" + folder + "</i>]<ul id='listSong'>";
+            playBackRate.innerHTML = "Speed:x" + (playBackRateValue.toFixed(1));
+            var arraySong = [];
+            for (i = 0; i < sumSong; i++) {
+                arraySong.push("<li id='" + i + "' onclick='playByIndex(this.id);'>" + listSong[i] + "</li>")
+            }
+            list_song.innerHTML = arraySong.join("");
+            document.getElementById("sumSong").innerHTML = sumSong;
+            currentIndex = -1;
+            playNext();
+            return true;
+        }
+        function updatePlaylistRandom() {
+            var randomPlaylistIndex = playListIndex;
+            while (playListIndex == randomPlaylistIndex) {
+                randomPlaylistIndex = parseInt(listPlaylist.length * Math.random());
+            }
+            playListIndex = randomPlaylistIndex;
+            currentCollectionItem = listCollection[listPlaylist[playListIndex]];
+            collectionSelection.value = listPlaylist[playListIndex];
+            updateList(currentCollectionItem);
+            return playListIndex;
+        }
+        function refreshView() {
+            media_player.loop = false;
+            loopOption.checked = isLoop;
+            randomOption.checked = isRandom;
+            ignoreErrorOption.checked = isIgnoreError;
+            repeatPlaylistOption.checked = isRepeatPlaylist;
+        }
+
+        collectionSelection.addEventListener("change", function () {
+            updateList(listCollection[this.value]);
+        });
+        media_player.addEventListener("ended", playNext);
+        source_media.addEventListener("error", function (e) {
+            if (isIgnoreError) {
+                playNext();
+            } else {
+                alert("Error file path!");
+            }
+        });
+        nextSong.addEventListener("click", playNext);
+        previousSong.addEventListener("click", playPrevious);
+        fasterSpeed.addEventListener("click", incrementSpeed);
+        slowerSpeed.addEventListener("click", decrementSpeed);
+        normalSpeed.addEventListener("click", setNormalSpeed);
+        repeatPlaylistOption.addEventListener("change", function () {
+            isRepeatPlaylist = this.checked;
+        });
+        loopOption.addEventListener("change", function () {
+            isLoop = this.checked;
+            //media_player.loop = isLoop;
+        });
+        randomOption.addEventListener("change", function () {
+            isRandom = this.checked;
+        });
+        ignoreErrorOption.addEventListener("change", function () {
+            isIgnoreError = this.checked;
+            console.log("isIgnoreError:" + isIgnoreError);
+        });
+        randomPlaylist.addEventListener("click", updatePlaylistRandom);
+
+        updateCollection();
+        updatePlaylistRandom();
+
+    </script>
+</body>
+</html>
